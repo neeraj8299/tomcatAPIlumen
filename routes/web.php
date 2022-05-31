@@ -14,7 +14,9 @@
 */
 
 $router->get('/', function () use ($router) {
-    return $router->app->version();
+    return response()->json([
+        "data" => "Welcome to Tomcat API"
+    ]);
 });
 
 $router->post('login', 'AuthenticationController@login');
