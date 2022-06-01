@@ -65,26 +65,42 @@ class QuizController extends Controller
     public function createGame(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|string|unique:games,name',
-            'groups' => 'required|array|min:1',
-            'groups.*' => 'required|exists:groups,name'
+            'name' => 'required|string',
+            'group_name' => 'required|string',
+            'participants' => 'array',
+            'participants.*' => 'email|exists:users,email'
         ]);
 
-        $gameDeatils = Game::create([
+        $gameDeatils = Game::firstOrNew([
             'name' => $request->name
         ]);
 
-        $participantsGroups = array_unique($request->groups);
+        $gameDeatils->save();
 
-        foreach ($participantsGroups as $userGroup) {
-            $groupId = Group::where('name', $userGroup)->value('id');
+        $groupName = $request->group_name;
 
-            $groupGame = GroupGame::firstOrNew([
-                'game_id' => $gameDeatils->id,
-                'group_id' => $groupId
+        $groupDetails = Group::firstOrNew([
+            'name' => $groupName
+        ]);
+
+        $groupDetails->save();
+
+        $groupGame = GroupGame::firstOrNew([
+            'game_id' => $gameDeatils->id,
+            'group_id' => $groupDetails->id
+        ]);
+
+        $groupGame->save();
+
+        $participantsEmail = array_unique($request->participants ?? []);
+
+        foreach ($participantsEmail as $userEmail) {
+            $userId = User::where('email', $userEmail)->value('id');
+
+            $userGroup = UserGroup::firstOrCreate([
+                'user_id' => $userId,
+                'group_id' => $groupDetails->id
             ]);
-
-            $groupGame->save();
         }
 
         return response()->json([
@@ -95,22 +111,24 @@ class QuizController extends Controller
     /**
      * function to get Leaderboard data on game id
      * 
-     * @param int $gameId
+     * @param string $gameId
      * @return object
      */
-    public function getLeadaerBoard(int $gameId)
+    public function getLeadaerBoard(string $gameName)
     {
         $validator = Validator::make([
-            'gameId' => $gameId
+            'gameName' => $gameName
         ], [
-            'gameId' => 'required|integer|exists:games,id',
+            'gameName' => 'required|exists:games,name',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'gameId' => 'invalid Game Id'
+                'gameId' => 'invalid Game name'
             ], 422);
         }
+
+        $gameId = Game::where('name', $gameName)->value('id');
 
         $data = GroupGame::join('groups', 'groups.id', 'group_id')
             ->select('score', 'groups.name as group_name')
@@ -132,12 +150,15 @@ class QuizController extends Controller
     public function updateGameScore(Request $request)
     {
         $this->validate($request, [
-            'gameId' => 'required|exists:games,id',
-            'groupId' => 'required|exists:groups,id',
+            'gameName' => 'required|exists:games,name',
+            'groupName' => 'required|exists:groups,name',
             'score' => 'required|numeric'
         ]);
 
-        $scoreUpdate = GroupGame::where([['game_id', $request->gameId], ['group_id', $request->groupId]])->update([
+        $gameId = Game::where('name', $request->gameName)->value('id');
+        $groupId = Group::where('name', $request->groupName)->value('id');
+
+        $scoreUpdate = GroupGame::where([['game_id', $gameId], ['group_id', $groupId]])->update([
             'score' => $request->score
         ]);
 

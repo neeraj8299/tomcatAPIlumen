@@ -22,12 +22,12 @@ $router->get('/', function () use ($router) {
 $router->post('login', 'AuthenticationController@login');
 
 $router->group(['middleware' => 'auth:moderator'], function () use ($router) {
-    $router->post('create-group', 'QuizController@createGroup');
+    // $router->post('create-group', 'QuizController@createGroup');
     $router->post('create-game', 'QuizController@createGame');
     $router->post('add-user', 'AuthenticationController@addUserData');
 });
 
 $router->group(['middleware' => 'auth:user'], function () use ($router) {
-    $router->get('get-leaderboard/{gameId}', 'QuizController@getLeadaerBoard');
+    $router->get('get-leaderboard/{gameName}', 'QuizController@getLeadaerBoard');
     $router->post('update-score', 'QuizController@updateGameScore');
 });
