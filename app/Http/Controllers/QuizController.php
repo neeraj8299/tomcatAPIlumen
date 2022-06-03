@@ -133,7 +133,7 @@ class QuizController extends Controller
         $data = GroupGame::join('groups', 'groups.id', 'group_id')
             ->select('score', 'groups.name as group_name')
             ->where('game_id', $gameId)
-            ->orderBy('group_games.updated_at', 'desc')
+            ->orderBy('group_games.score', 'desc')
             ->get();
 
         return response()->json([
