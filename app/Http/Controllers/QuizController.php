@@ -110,7 +110,7 @@ class QuizController extends Controller
 
         $gameDeatils->save();
 
-        if ($gameDeatils->flag === 'inactive') {
+        if ($gameDeatils->status === 'inactive') {
             return response()->json([
                 'data' => 'Unable to add group as game is already completed'
             ], 400);
@@ -246,7 +246,7 @@ class QuizController extends Controller
         ]);
 
         $status = Game::where('name', $request->gameName)->update([
-            'flag' => 'inactive'
+            'status' => 'inactive'
         ]);
 
         return response()->json([
