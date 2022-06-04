@@ -25,6 +25,7 @@ $router->group(['middleware' => 'auth:moderator'], function () use ($router) {
     // $router->post('create-group', 'QuizController@createGroup');
     $router->post('create-game', 'QuizController@createGame');
     $router->post('add-user', 'AuthenticationController@addUserData');
+    $router->post('close-game', 'QuizController@closeGame');
 });
 
 $router->group(['middleware' => 'auth:user'], function () use ($router) {

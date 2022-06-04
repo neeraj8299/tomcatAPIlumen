@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignId('game_id')->constrained('games')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->char('display_group_name');
             $table->float('score')->default(0.0);
             $table->timestamps();
         });
