@@ -223,13 +223,18 @@ class QuizController extends Controller
 
         $message = 'Unable to update score';
         $code = 400;
+        $updatedLeaderBoard = $this->getLeadaerBoard($request->gameName);
+
+        $updatedLeaderBoard = (isset($updatedLeaderBoard->data) && !empty($updatedLeaderBoard->data)) ? $updatedLeaderBoard->data : [];
 
         if ($scoreUpdate) {
             $message = 'Score Updated Succesfully';
             $code = 200;
         }
+
         return response()->json([
-            'message' => $message
+            'message' => $message,
+            'updatedLeaderBoard' => $updatedLeaderBoard
         ], $code);
     }
 
