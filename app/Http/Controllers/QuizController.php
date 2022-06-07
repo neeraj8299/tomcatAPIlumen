@@ -224,6 +224,7 @@ class QuizController extends Controller
         $message = 'Unable to update score';
         $code = 400;
         $updatedLeaderBoard = $this->getLeadaerBoard($request->gameName);
+        $updatedLeaderBoard = $updatedLeaderBoard->getData();
 
         $updatedLeaderBoard = (isset($updatedLeaderBoard->data) && !empty($updatedLeaderBoard->data)) ? $updatedLeaderBoard->data : [];
 
