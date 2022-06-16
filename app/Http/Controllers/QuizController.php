@@ -148,6 +148,11 @@ class QuizController extends Controller
             'game_id' => $gameDeatils->id
         ]);
 
+        if ($gameSessionDetails->status === 'inactive') {
+            return response()->json([
+                'data' => 'Unable to Add Room To Session as Session is Closed'
+            ], 400);
+        }
         $gameSessionRoomCount = RoomSession::where('session_id', $gameSessionDetails->id)->count();
 
         if ($gameSessionRoomCount >= count($this->groupDisplayNameList)) {
