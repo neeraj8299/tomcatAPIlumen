@@ -159,7 +159,7 @@ class QuizController extends Controller
         $groupGame = RoomSession::firstOrNew([
             'session_id' => $gameSessionDetails->id,
             'room_id' => $roomDetails->id,
-            'display_group_name' => $this->getGroupDisplayName($gameSessionRoomCount),
+            'display_room_name' => $this->getGroupDisplayName($gameSessionRoomCount),
         ]);
 
         $groupGame->save();
@@ -214,7 +214,7 @@ class QuizController extends Controller
         $sessionID = Session::where('session_uuid', $sessionUuid)->value('id');
 
         $data = RoomSession::join('rooms', 'rooms.id', 'room_id')
-            ->select('score', 'rooms.name as group_name', 'room_games.display_group_name')
+            ->select('score', 'rooms.name as group_name', 'room_games.display_room_name')
             ->where('session_id', $sessionID)
             ->orderBy('group_games.score', 'desc')
             ->get();
