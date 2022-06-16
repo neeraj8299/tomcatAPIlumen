@@ -13,11 +13,11 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('group_games', function (Blueprint $table) {
+        Schema::create('room_sessions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('group_id')->constrained('groups')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('game_id')->constrained('games')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->char('display_group_name');
+            $table->foreignId('room_id')->constrained('rooms', 'id')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('session_id')->constrained('sessions', 'id')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->char('display_room_name');
             $table->float('score')->default(0.0);
             $table->timestamps();
         });

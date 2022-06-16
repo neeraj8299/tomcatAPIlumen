@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class UserGroup extends Model {
+class RoomSession extends Model {
     protected $guarded = [];
-    protected $table = 'user_groups';
+    protected $table = 'room_sessions';
 }

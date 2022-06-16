@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
-use App\Models\Group;
-use App\Models\GroupGame;
+use App\Models\Room;
+use App\Models\RoomSession;
+use App\Models\Session;
 use App\Models\User;
-use App\Models\UserGroup;
+use App\Models\UserRoom;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -56,6 +57,29 @@ class QuizController extends Controller
     ];
 
     /**
+     * function to add new game with their uuid
+     * 
+     * @param Request $request
+     * @return object
+     */
+    public function createGame(Request $request)
+    {
+        $this->validate($request, [
+            'name' => 'required|string|unique:games,name'
+        ]);
+
+        $gameDeatils = Game::firstOrNew([
+            'name' => $request->name
+        ]);
+
+        $gameDeatils->save();
+
+        return response()->json([
+            'data' => 'Game Added SuccesFully'
+        ]);
+    }
+
+    /**
      * function to create group with participants details
      * 
      * @param Request $request
@@ -69,7 +93,7 @@ class QuizController extends Controller
             'participants.*' => 'required|email|exists:users,email'
         ]);
 
-        $groupDetails = Group::create([
+        $groupDetails = Room::create([
             'name' => $request->name
         ]);
 
@@ -78,7 +102,7 @@ class QuizController extends Controller
         foreach ($participantsEmail as $userEmail) {
             $userId = User::where('email', $userEmail)->value('id');
 
-            $userGroup = UserGroup::firstOrCreate([
+            $userGroup = UserRoom::firstOrCreate([
                 'user_id' => $userId,
                 'group_id' => $groupDetails->id
             ]);
@@ -95,47 +119,47 @@ class QuizController extends Controller
      * @param Request $request
      * @return object
      */
-    public function createGame(Request $request)
+    public function createGameSession(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|string',
-            'group_name' => 'required|string',
+            'session_uuid' => 'required|string',
+            'game_name' => 'required|string|exists:games,name',
+            'room_name' => 'required|string',
             'participants' => 'array',
             'participants.*' => 'email|exists:users,email'
         ]);
 
-        $gameDeatils = Game::firstOrNew([
-            'name' => $request->name
-        ]);
-
-        $gameDeatils->save();
+        $gameDeatils = Game::where('name', $request->game_name)->first();
 
         if ($gameDeatils->status === 'inactive') {
             return response()->json([
-                'data' => 'Unable to add group as game is already completed'
+                'data' => 'Unable to Create Session as Game is Inactive'
             ], 400);
         }
 
-        $groupName = $request->group_name;
+        $roomName = $request->room_name;
 
-        $groupDetails = Group::firstOrNew([
-            'name' => $groupName
+        $roomDetails = Room::firstOrCreate([
+            'name' => $roomName
         ]);
 
-        $groupDetails->save();
+        $gameSessionDetails = Session::firstOrCreate([
+            'session_uuid' => $request->session_uuid,
+            'game_id' => $gameDeatils->id
+        ]);
 
-        $gameGroupCount = GroupGame::where('game_id', $gameDeatils->id)->count();
+        $gameSessionRoomCount = RoomSession::where('session_id', $gameSessionDetails->id)->count();
 
-        if ($gameGroupCount >= count($this->groupDisplayNameList)) {
+        if ($gameSessionRoomCount >= count($this->groupDisplayNameList)) {
             return response()->json([
-                "data" => "Unable To join Game Group Maximum LImit Exceeded"
+                "data" => "Unable To join Game Group Maximum Limit Exceeded"
             ], 400);
         }
 
-        $groupGame = GroupGame::firstOrNew([
-            'game_id' => $gameDeatils->id,
-            'group_id' => $groupDetails->id,
-            'display_group_name' => $this->getGroupDisplayName($gameGroupCount),
+        $groupGame = RoomSession::firstOrNew([
+            'session_id' => $gameSessionDetails->id,
+            'room_id' => $roomDetails->id,
+            'display_group_name' => $this->getGroupDisplayName($gameSessionRoomCount),
         ]);
 
         $groupGame->save();
@@ -145,14 +169,14 @@ class QuizController extends Controller
         foreach ($participantsEmail as $userEmail) {
             $userId = User::where('email', $userEmail)->value('id');
 
-            $userGroup = UserGroup::firstOrCreate([
+            $userGroup = UserRoom::firstOrCreate([
                 'user_id' => $userId,
-                'group_id' => $groupDetails->id
+                'room_id' => $roomDetails->id
             ]);
         }
 
         return response()->json([
-            'message' => 'Game Created Succesfully'
+            'message' => 'Game Session Created Succesfully'
         ]);
     }
 
@@ -170,28 +194,28 @@ class QuizController extends Controller
     /**
      * function to get Leaderboard data on game name
      * 
-     * @param string $gameName
+     * @param string $sessionUuid
      * @return object
      */
-    public function getLeadaerBoard(string $gameName)
+    public function getLeadaerBoard(string $sessionUuid)
     {
         $validator = Validator::make([
-            'gameName' => $gameName
+            'gameSessionName' => $sessionUuid
         ], [
-            'gameName' => 'required|exists:games,name',
+            'gameSessionName' => 'required|exists:sessions,session_uuid',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'gameId' => 'invalid Game name'
+                'gameId' => 'Invalid Session UUID'
             ], 422);
         }
 
-        $gameId = Game::where('name', $gameName)->value('id');
+        $sessionID = Session::where('session_uuid', $sessionUuid)->value('id');
 
-        $data = GroupGame::join('groups', 'groups.id', 'group_id')
-            ->select('score', 'groups.name as group_name', 'group_games.display_group_name')
-            ->where('game_id', $gameId)
+        $data = RoomSession::join('rooms', 'rooms.id', 'room_id')
+            ->select('score', 'rooms.name as group_name', 'room_games.display_group_name')
+            ->where('session_id', $sessionID)
             ->orderBy('group_games.score', 'desc')
             ->get();
 
@@ -206,27 +230,28 @@ class QuizController extends Controller
      * @param Request $request
      * @return object
      */
-    public function updateGameScore(Request $request)
+    public function updateGameSessionScore(Request $request)
     {
         $this->validate($request, [
-            'gameName' => 'required|exists:games,name',
-            'groupName' => 'required|exists:groups,name',
+            'sessionUuid' => 'required|string|exists:sessions,session_uuid',
+            'roomName' => 'required|exists:rooms,name',
             'score' => 'required|numeric'
         ]);
 
-        $gameId = Game::where('name', $request->gameName)->value('id');
-        $groupId = Group::where('name', $request->groupName)->value('id');
+        $sessionID = Session::where('session_uuid', $request->sessionUuid)->value('id');
+        $roomId = Room::where('name', $request->roomName)->value('id');
 
-        $scoreUpdate = GroupGame::where([['game_id', $gameId], ['group_id', $groupId]])->update([
-            'score' => $request->score
-        ]);
+        $scoreUpdate = RoomSession::where([['session_id', $sessionID], ['room_id', $roomId]])
+                        ->update([
+                            'score' => $request->score
+                        ]);
 
         $response = [
             'message' => 'Unable to update score',
             'data' => []
         ];
         $code = 400;
-        $updatedLeaderBoard = $this->getLeadaerBoard($request->gameName);
+        $updatedLeaderBoard = $this->getLeadaerBoard($request->sessionUuid);
         $updatedLeaderBoard = $updatedLeaderBoard->getData();
 
         $updatedLeaderBoard = (isset($updatedLeaderBoard->data) && !empty($updatedLeaderBoard->data)) ? $updatedLeaderBoard->data : [];
@@ -247,13 +272,13 @@ class QuizController extends Controller
      * @param 
      * @return object
      */
-    public function closeGame(Request $request)
+    public function closeGameSession(Request $request)
     {
         $this->validate($request, [
-            'gameName' => 'required|exists:games,name'
+            'sessionUuid' => 'required|string|exists:sessions,session_uuid',
         ]);
 
-        $status = Game::where('name', $request->gameName)->update([
+        $status = Session::where('session_uuid', $request->sessionUuid)->update([
             'status' => 'inactive'
         ]);
 
