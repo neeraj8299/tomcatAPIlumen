@@ -216,7 +216,7 @@ class QuizController extends Controller
         $data = RoomSession::join('rooms', 'rooms.id', 'room_id')
             ->select('score', 'rooms.name as group_name', 'room_sessions.display_room_name')
             ->where('session_id', $sessionID)
-            ->orderBy('group_games.score', 'desc')
+            ->orderBy('room_sessions.score', 'desc')
             ->get();
 
         return response()->json([
