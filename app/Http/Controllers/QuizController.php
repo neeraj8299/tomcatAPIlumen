@@ -65,7 +65,7 @@ class QuizController extends Controller
     public function createGame(Request $request)
     {
         $this->validate($request, [
-            'name' => 'required|string|unique:games,name'
+            'name' => 'required|string'
         ]);
 
         $gameDeatils = Game::firstOrNew([
