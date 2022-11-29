@@ -1,1 +1,4 @@
 ALTER USER 'root'@'localhost' IDENTIFIED BY 'hrhk';
+
+
+Hi Ranu
